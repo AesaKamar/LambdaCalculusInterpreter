@@ -23,19 +23,53 @@ id' lexp@(Apply _ _) = lexp
 
 
 beta :: Lexp -> Lexp
+-- Case of variable (Atom)
+beta v@(Atom _) = v
+-- Cases of Lambda
+beta lexp@(Lambda x e) = (Lambda x (beta e) )
 beta lexp@(Apply (Lambda x e) m )
   | e == x = m
   | otherwise = beta e
+-- Case of Function Applicaiton
 beta lexp@ (Apply x y) = (Apply (beta x) (beta y))
-beta v@(Atom _) = v
-beta lexp@(Lambda (Atom _) _) = lexp
+
+-- replaceIn:: Lexp -> Lexp -> Lexp -> Lexp
+-- Atom(ThingWeNeedToReplace), Atom(ValueToReplaceWith), ExpressionToWorkOn -> Result
+-- replaceIn originalVar newName Atom(e)
+--   | e == originalVar = newName
+--   | otherwise        = e
+-- replaceIn originalVar newName e@(Lambda( _ _ ))
 
 
-alpha :: Lexp -> Lexp
-alpha v@(Atom _) = v
-alpha (Lambda (Atom x) y) = y
+
+alpha ::  Integer -> Lexp -> Lexp
+alpha n lexp@(Lambda (Atom x) (Atom e))
+  | e == x = Lambda  (Atom ("var" ++ show n)) (Atom("var" ++ show n))
+-- alpha n lexp@(Lambda (Atom x) (Lambda y e)) =  Atom x
+
+-- alpha n (Atom v) = Atom v
+-- alpha n lexp@(Lambda x e)
+--   | e == x = Lambda  (Atom ("var" ++ show n)) (Atom("var" ++ show n))
+--   | otherwise = Lambda x (alpha n e)
+-- alpha n lexp@(Apply e m)  = (Apply (alpha (n+1) e) m)
 
 
+
+eta :: Lexp ->  Lexp
+-- Case of variable
+eta (Atom v) = Atom v
+-- Case of Lambda
+eta lexp@(Lambda x (Apply e m))
+  | x == m = e
+  | otherwise = lexp
+eta (Lambda x e) =  (Lambda x (eta e))
+-- Case of Application
+eta (Apply x y) = Apply (eta x) (eta y)
+
+
+
+simplify :: Lexp -> Lexp
+simplify e = beta (eta e)
 
 -- Entry point of program
 main = do
@@ -43,4 +77,4 @@ main = do
     fileName <- getLine
     -- id' simply returns its input, so runProgram will result
     -- in printing each lambda expression twice.
-    runProgram fileName beta
+    runProgram fileName simplify
