@@ -1,5 +1,6 @@
 import PA1Helper
-
+import Data.Unique
+import System.IO.Unsafe (unsafePerformIO)
 -- Haskell representation of lambda expression
 -- In Lambda Lexp Lexp, the first Lexp should always be Atom String
 -- data Lexp = Atom String | Lambda Lexp Lexp | Apply Lexp  Lexp
@@ -19,8 +20,6 @@ id' :: Lexp -> Lexp
 id' v@(Atom _) = v
 id' lexp@(Lambda (Atom _) _) = lexp
 id' lexp@(Apply _ _) = lexp
-
-
 
 beta :: Lexp -> Lexp
 -- Case of variable (Atom)
@@ -45,17 +44,11 @@ replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(App
 
 
 
-alpha ::  Integer -> Lexp -> Lexp
-alpha n lexp@(Lambda (Atom x) e)
-  | otherwise = Lambda (replaceIn) (replaceIn)
--- alpha n lexp@(Lambda (Atom x) (Lambda y e)) =  Atom x
-
--- alpha n (Atom v) = Atom v
--- alpha n lexp@(Lambda x e)
---   | e == x = Lambda  (Atom ("var" ++ show n)) (Atom("var" ++ show n))
---   | otherwise = Lambda x (alpha n e)
--- alpha n lexp@(Apply e m)  = (Apply (alpha (n+1) e) m)
-
+alpha :: Lexp -> IO Lexp
+alpha lexp@(Lambda (Atom x) e) = do
+    unique <- newUnique
+    return (replaceIn (Atom x) (Atom ("var" ++ show (hashUnique unique))) e)
+alpha e =  return e
 
 
 eta :: Lexp ->  Lexp
@@ -70,9 +63,8 @@ eta (Lambda x e) =  (Lambda x (eta e))
 eta (Apply x y) = Apply (eta x) (eta y)
 
 
-
 simplify :: Lexp -> Lexp
-simplify e =  eta (beta e)
+simplify e =  beta (eta (unsafePerformIO (alpha e)) )
 
 -- Entry point of program
 main = do
