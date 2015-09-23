@@ -33,18 +33,21 @@ beta lexp@(Apply (Lambda x e) m )
 -- Case of Function Applicaiton
 beta lexp@ (Apply x y) = (Apply (beta x) (beta y))
 
--- replaceIn:: Lexp -> Lexp -> Lexp -> Lexp
--- Atom(ThingWeNeedToReplace), Atom(ValueToReplaceWith), ExpressionToWorkOn -> Result
--- replaceIn originalVar newName Atom(e)
---   | e == originalVar = newName
---   | otherwise        = e
--- replaceIn originalVar newName e@(Lambda( _ _ ))
+
+replaceIn:: Lexp -> Lexp -> Lexp -> Lexp
+replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(Atom e)
+  | e == thingWeNeedToReplace = valueToReplaceWith
+  | otherwise = expressionToWorkOn
+replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(Lambda (Atom x) e)
+  | otherwise = Lambda (Atom x) (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e)
+replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(Apply e1 e2)
+  | otherwise = Apply (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e1) (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e2)
 
 
 
 alpha ::  Integer -> Lexp -> Lexp
-alpha n lexp@(Lambda (Atom x) (Atom e))
-  | e == x = Lambda  (Atom ("var" ++ show n)) (Atom("var" ++ show n))
+alpha n lexp@(Lambda (Atom x) e)
+  | otherwise = Lambda (replaceIn) (replaceIn)
 -- alpha n lexp@(Lambda (Atom x) (Lambda y e)) =  Atom x
 
 -- alpha n (Atom v) = Atom v
@@ -69,7 +72,7 @@ eta (Apply x y) = Apply (eta x) (eta y)
 
 
 simplify :: Lexp -> Lexp
-simplify e = beta (eta e)
+simplify e =  eta (beta e)
 
 -- Entry point of program
 main = do
