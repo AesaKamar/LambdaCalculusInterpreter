@@ -22,3 +22,19 @@ Result 7: (y v9)
 Input 8: (\y.(\x.\y.(x y) y) (y w))
 Result 8: \y.((y w) v10)
 *Main>
+*Main> :l PA1.hs
+[1 of 2] Compiling PA1Helper        ( PA1Helper.hs, interpreted )
+[2 of 2] Compiling Main             ( PA1.hs, interpreted )
+Ok, modules loaded: PA1Helper, Main.
+*Main> main
+Please enter a filename containing lambda expressions:
+a.lambda
+Input 1: (\x.x (\x.x y))
+Result 1: y
+Input 2: (\x.\y.(x y) (y w))
+Result 2: (y w)
+Input 3: (\x.y (\x.(x x) \x.(x x)))
+Result 3: y
+Input 4: (\x.(x x) \x.(x x))
+Result 4: (v5 v6)
+*Main>
