@@ -28,44 +28,46 @@ id' lexp@(Apply _ _) = lexp
 
 -- Beta Handles a single application of the Beta Redux
 beta :: Lexp -> Lexp
-beta v@(Atom _) = v
-beta lexp@(Lambda x e) = (Lambda x (beta e) )
-beta lexp@(Apply (Lambda x e) m )
+beta v@(Atom _) = v                                                                                 --Case of expression as v
+beta lexp@(Lambda x e) = (Lambda x (beta e) )                                                       --Case of expression as \v.e
+beta lexp@(Apply (Lambda x e) m )                                                                   --Case of expression as (\x.E M)
   | e == x = m
   | otherwise = replaceIn x m (beta e)
-beta lexp@ (Apply x y) = (Apply (beta x) (beta y))
+beta lexp@ (Apply x y) = (Apply (beta x) (beta y))                                                  --Case of expression as v
 
 
 -- ReplaceIn is a helper function to replace all x's within e with expression m
 replaceIn:: Lexp -> Lexp -> Lexp -> Lexp
-replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(Atom e)
+replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(Atom e)                --Case of expression as v
   | e == thingWeNeedToReplace = valueToReplaceWith
   | otherwise = Atom e
-replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(Lambda (Atom x) e)
+replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(Lambda (Atom x) e)     --Case of expression as \v.e
   = Lambda (Atom x) (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e)
-replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(Apply e1 e2)
+replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(Apply e1 e2)           --Case of expression as (e e)
   = Apply (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e1) (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e2)
 
 
 -- Alpha necessarily renames bound pairs of variables to fresh names
+-- Uses NewUnique to generate a universally unique variable name for alpha conversion
+-- unsafePerformIO is a promise to the haskell compiler that this is a safe operation
 alpha :: Lexp -> IO Lexp
-alpha (Lambda (Atom x) e) = do
+alpha (Atom v) =return (Atom v)                                                                     --Case of expression as v
+alpha (Lambda (Atom x) e) = do                                                                      --Case of expression as \v.e
     unique <- newUnique
     let newVar = (Atom ("v" ++ show (hashUnique unique)))
-    return (Lambda newVar (replaceIn (unsafePerformIO (alpha (Atom x))) newVar e) )
-alpha (Lambda x e) =
-  return (Lambda (unsafePerformIO (alpha x)) (unsafePerformIO (alpha e)) )
-alpha (Atom v) =return (Atom v)
-alpha (Apply e1 e2) = return  (Apply (unsafePerformIO (alpha e1) ) (unsafePerformIO (alpha e2)))
+    return (Lambda newVar (unsafePerformIO (alpha (replaceIn (unsafePerformIO (alpha (Atom x))) newVar e) )))
+alpha (Lambda e1 e2) =                                                                                --Case of expression as \e1.e2
+  return (Lambda (unsafePerformIO (alpha e1)) (unsafePerformIO (alpha e2)))
+alpha (Apply e1 e2) = return  (Apply (unsafePerformIO (alpha e1) ) (unsafePerformIO (alpha e2)))    --Case of expression as (e1 e2)
 
 -- Eta takes a lambda expression and eta converts it down to a simpler form
 eta :: Lexp ->  Lexp
-eta (Atom v) = Atom v
-eta lexp@(Lambda x (Apply e m))
+eta (Atom v) = Atom v                                                                               --Case of expression as v
+eta lexp@(Lambda x (Apply e m))                                                                     --Case of expression as \x.(e1 e2)
   | x == m = e
   | otherwise = lexp
-eta (Lambda x e) =  (Lambda x (eta e))
-eta (Apply x y) = Apply (eta x) (eta y)
+eta (Lambda x e) =  (Lambda x (eta e))                                                              --Case of expression as \v.e
+eta (Apply x y) = Apply (eta x) (eta y)                                                             --Case of expression as (e1 e2)
 
 -- Simplify applies alpha renameing, eta conversion, then beta reduction to an expression
 simplify :: Lexp -> Lexp
