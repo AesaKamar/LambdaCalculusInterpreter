@@ -1,4 +1,7 @@
 -- Programmed by Aesa Kamar and Stephen Burchett
+-- September 2015
+--
+-- This program takes a Lambda calculus expression and simplifies it ith alpha, eta, and beta reductions
 
 import PA1Helper
 import Data.Unique
@@ -23,19 +26,17 @@ id' v@(Atom _) = v
 id' lexp@(Lambda (Atom _) _) = lexp
 id' lexp@(Apply _ _) = lexp
 
+-- Beta Handles a single application of the Beta Redux
 beta :: Lexp -> Lexp
--- Case of variable (Atom)
 beta v@(Atom _) = v
--- Cases of Lambda
 beta lexp@(Lambda x e) = (Lambda x (beta e) )
 beta lexp@(Apply (Lambda x e) m )
   | e == x = m
   | otherwise = replaceIn x m (beta e)
--- Case of Function Applicaiton
 beta lexp@ (Apply x y) = (Apply (beta x) (beta y))
 
 
-
+-- ReplaceIn is a helper function to replace all x's within e with expression m
 replaceIn:: Lexp -> Lexp -> Lexp -> Lexp
 replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(Atom e)
   | e == thingWeNeedToReplace = valueToReplaceWith
@@ -46,7 +47,7 @@ replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(App
   = Apply (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e1) (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e2)
 
 
-
+-- Alpha necessarily renames bound pairs of variables to fresh names
 alpha :: Lexp -> IO Lexp
 alpha (Lambda (Atom x) e) = do
     unique <- newUnique
@@ -57,35 +58,19 @@ alpha (Lambda x e) =
 alpha (Atom v) =return (Atom v)
 alpha (Apply e1 e2) = return  (Apply (unsafePerformIO (alpha e1) ) (unsafePerformIO (alpha e2)))
 
-
+-- Eta takes a lambda expression and eta converts it down to a simpler form
 eta :: Lexp ->  Lexp
--- Case of variable
 eta (Atom v) = Atom v
--- Case of Lambda
 eta lexp@(Lambda x (Apply e m))
   | x == m = e
   | otherwise = lexp
 eta (Lambda x e) =  (Lambda x (eta e))
--- Case of Application
 eta (Apply x y) = Apply (eta x) (eta y)
 
-
+-- Simplify applies alpha renameing, eta conversion, then beta reduction to an expression
 simplify :: Lexp -> Lexp
--- simplify e = beta (eta (unsafePerformIO (alpha e)))
--- simplify e = beta (eta e)
-
 simplify e =
-   (\ x n -> iterate beta x !! n) (eta(unsafePerformIO (alpha e) )) 20
--- simplify e = do
---   let moreReducable = True
---   -- If we have pattern (Apply (Lambda x e) m), set moreReducable = True
---
---   let newLexp = beta (eta (unsafePerformIO (alpha e)))
---   if newLexp == e
---     then do
---       moreReducable = False
---     else do
---       return beta newLexp
+   (\ x n -> iterate beta x !! n) (eta(unsafePerformIO (alpha e) )) 30
 
 
 
