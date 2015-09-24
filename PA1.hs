@@ -1,3 +1,5 @@
+-- Programmed by Aesa Kamar and Stephen Burchett
+
 import PA1Helper
 import Data.Unique
 import System.IO.Unsafe (unsafePerformIO)
@@ -28,27 +30,32 @@ beta v@(Atom _) = v
 beta lexp@(Lambda x e) = (Lambda x (beta e) )
 beta lexp@(Apply (Lambda x e) m )
   | e == x = m
-  | otherwise = beta e
+  | otherwise = replaceIn x m (beta e)
 -- Case of Function Applicaiton
 beta lexp@ (Apply x y) = (Apply (beta x) (beta y))
+
 
 
 replaceIn:: Lexp -> Lexp -> Lexp -> Lexp
 replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(Atom e)
   | e == thingWeNeedToReplace = valueToReplaceWith
-  | otherwise = expressionToWorkOn
+  | otherwise = Atom e
 replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(Lambda (Atom x) e)
-  | otherwise = Lambda (Atom x) (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e)
+  = Lambda (Atom x) (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e)
 replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith expressionToWorkOn@(Apply e1 e2)
-  | otherwise = Apply (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e1) (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e2)
+  = Apply (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e1) (replaceIn (Atom thingWeNeedToReplace) valueToReplaceWith e2)
 
 
 
 alpha :: Lexp -> IO Lexp
-alpha lexp@(Lambda (Atom x) e) = do
+alpha (Lambda (Atom x) e) = do
     unique <- newUnique
-    return (replaceIn (Atom x) (Atom ("var" ++ show (hashUnique unique))) e)
-alpha e =  return e
+    let newVar = (Atom ("v" ++ show (hashUnique unique)))
+    return (Lambda newVar (replaceIn (unsafePerformIO (alpha (Atom x))) newVar e) )
+alpha (Lambda x e) =
+  return (Lambda (unsafePerformIO (alpha x)) (unsafePerformIO (alpha e)) )
+alpha (Atom v) =return (Atom v)
+alpha (Apply e1 e2) = return  (Apply (unsafePerformIO (alpha e1) ) (unsafePerformIO (alpha e2)))
 
 
 eta :: Lexp ->  Lexp
@@ -64,7 +71,23 @@ eta (Apply x y) = Apply (eta x) (eta y)
 
 
 simplify :: Lexp -> Lexp
-simplify e =  beta (eta (unsafePerformIO (alpha e)) )
+-- simplify e = beta (eta (unsafePerformIO (alpha e)))
+-- simplify e = beta (eta e)
+
+simplify e =
+   (\ x n -> iterate beta x !! n) (eta(unsafePerformIO (alpha e) )) 20
+-- simplify e = do
+--   let moreReducable = True
+--   -- If we have pattern (Apply (Lambda x e) m), set moreReducable = True
+--
+--   let newLexp = beta (eta (unsafePerformIO (alpha e)))
+--   if newLexp == e
+--     then do
+--       moreReducable = False
+--     else do
+--       return beta newLexp
+
+
 
 -- Entry point of program
 main = do

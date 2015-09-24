@@ -1,23 +1,24 @@
 *Main> :l PA1.hs
 [1 of 2] Compiling PA1Helper        ( PA1Helper.hs, interpreted )
 [2 of 2] Compiling Main             ( PA1.hs, interpreted )
-Ok, modules loaded: Main, PA1Helper.
+Ok, modules loaded: PA1Helper, Main.
 *Main> main
 Please enter a filename containing lambda expressions:
 sample.lambda
 Input 1: (\x.\y.(y x) (y w))
-Result 1: \y.(y x)
+Result 1: \y.(y (y w))
 Input 2: (\x.\y.(x y) (y w))
 Result 2: (y w)
 Input 3: (\x.x y)
 Result 3: y
 Input 4: \x.(y x)
-Result 4: (y var1)
+Result 4: y
 Input 5: ((\y.\x.(y x) \x.(x x)) y)
-Result 5: (x y)
+Result 5: (v6 y)
 Input 6: (((\b.\t.\e.((b t) e) \x.\y.x) x) y)
-Result 6: ((\t.(b t) x) y)
+Result 6: x
 Input 7: \x.((\x.(y x) \x.(z x)) x)
-Result 7: ((y var2) var2)
+Result 7: (y v9)
 Input 8: (\y.(\x.\y.(x y) y) (y w))
-Result 8: \y.(x y)
+Result 8: \y.((y w) v10)
+*Main>

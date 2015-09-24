@@ -1,2 +1,4 @@
 (\x.x (\x.x y))
 (\x.\y.(x y)(y w))
+(\x.y (\x.(x x) \x.(x x)))
+(\x.(x x) \x.(x x))
